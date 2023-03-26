@@ -39,6 +39,7 @@ jobs:
       - name: Installing Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
+          target: ${{ matrix.target }}
           toolchain: ${{ matrix.rust }}
           override: true
       - name: Installing needed macOS dependencies
