@@ -7,7 +7,7 @@ on:
 
 jobs:
   publish:
-    name: Publishing for ${{ matrix.build }}
+    name: Publishing binary for ${{ matrix.build }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -59,7 +59,7 @@ jobs:
             ~/.cargo/registry
             ~/.cargo/git
             target
-          key: ${{ runner.os }}-cargo-cd-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.build }}-cargo-cd-${{ hashFiles('**/Cargo.lock') }}
       - name: Running cargo build
         uses: actions-rs/cargo@v1
         with:
@@ -88,79 +88,79 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  publish-cargo:
-    name: Publish Crate
-    runs-on: ubuntu-latest
-    steps:
-      - name: Installing Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-      - name: Checking out sources
-        uses: actions/checkout@v1
-      - name: Cache Cargo
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
-      - name: Installing dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y -qq pkg-config libssl-dev
-      - uses: actions-rs/cargo@v1
-        with:
-          command: publish
-          args: --token ${{ secrets.CARGO_API_KEY }} --allow-dirty
-
-  publish-vscode:
-    name: Publish VSCode Extension
-    runs-on: ubuntu-latest
-    steps:
-      - name: Use Node.js 14.x
-        uses: actions/setup-node@v1
-        with:
-          node-version: 14.x
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-      - uses: actions/checkout@master
-      - uses: actions/cache@v2
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - name: npm install
-        working-directory: ./vscode
-        run: npm ci
-      - id: metadata
-        run: |
-          METADATA=$(cargo metadata --no-deps)
-          echo "::set-output name=crate::$METADATA"
-      - name: Package to VSCode Extension
-        working-directory: ./vscode
-        env:
-          VSCE_PAT: ${{ secrets.VSCODE_API_KEY }}
-        run: |
-          ./node_modules/.bin/vsce package --out prosemd-vs.vsix
-      - name: Publish to VSCode Marketplace
-        working-directory: ./vscode
-        env:
-          VSCE_PAT: ${{ secrets.VSCODE_API_KEY }}
-          VERSION: ${{ fromJson(steps.metadata.outputs.crate).packages[0].version }}
-        run: |
-          ./node_modules/.bin/vsce publish $VERSION
-      - name: Releasing assets
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            vscode/prosemd-vs.vsix
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  # publish-cargo:
+  #   name: Publish Crate
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Installing Rust toolchain
+  #       uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         profile: minimal
+  #         override: true
+  #     - name: Checking out sources
+  #       uses: actions/checkout@v1
+  #     - name: Cache Cargo
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: |
+  #           ~/.cargo/registry
+  #           ~/.cargo/git
+  #           target
+  #         key: ${{ runner.build }}-cargo-publish-${{ hashFiles('**/Cargo.lock') }}
+  #     - name: Installing dependencies
+  #       run: |
+  #         sudo apt-get update
+  #         sudo apt-get install -y -qq pkg-config libssl-dev
+  #     - uses: actions-rs/cargo@v1
+  #       with:
+  #         command: publish
+  #         args: --token ${{ secrets.CARGO_API_KEY }} --allow-dirty
+  #
+  # publish-vscode:
+  #   name: Publish VSCode Extension
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Use Node.js 14.x
+  #       uses: actions/setup-node@v1
+  #       with:
+  #         node-version: 14.x
+  #     - uses: actions-rs/toolchain@v1
+  #       with:
+  #         toolchain: stable
+  #         profile: minimal
+  #         override: true
+  #     - uses: actions/checkout@master
+  #     - uses: actions/cache@v2
+  #       with:
+  #         path: ~/.npm
+  #         key: ${{ runner.build }}-node-${{ hashFiles('**/package-lock.json') }}
+  #         restore-keys: |
+  #           ${{ runner.build }}-node-
+  #     - name: npm install
+  #       working-directory: ./vscode
+  #       run: npm ci
+  #     - id: metadata
+  #       run: |
+  #         METADATA=$(cargo metadata --no-deps)
+  #         echo "::set-output name=crate::$METADATA"
+  #     - name: Package to VSCode Extension
+  #       working-directory: ./vscode
+  #       env:
+  #         VSCE_PAT: ${{ secrets.VSCODE_API_KEY }}
+  #       run: |
+  #         ./node_modules/.bin/vsce package --out prosemd-vs.vsix
+  #     - name: Publish to VSCode Marketplace
+  #       working-directory: ./vscode
+  #       env:
+  #         VSCE_PAT: ${{ secrets.VSCODE_API_KEY }}
+  #         VERSION: ${{ fromJson(steps.metadata.outputs.crate).packages[0].version }}
+  #       run: |
+  #         ./node_modules/.bin/vsce publish $VERSION
+  #     - name: Releasing assets
+  #       uses: softprops/action-gh-release@v1
+  #       with:
+  #         files: |
+  #           vscode/prosemd-vs.vsix
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
