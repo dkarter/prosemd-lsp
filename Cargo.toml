@@ -57,6 +57,3 @@ build-override = { opt-level = 2 }
 bench = false
 path = "src/main.rs"
 name = "prosemd-lsp"
-
-[target.aarch64-apple-darwin]
-rustflags = ["-C", "link-arg=-Wl,-dead_strip", "-C", "link-arg=-arch", "-C", "link-arg=arm64"]
